@@ -1,6 +1,8 @@
 import discord
 import os
 import requests
+import re
+import logging
 
 from googlesearch import search
 
@@ -29,9 +31,14 @@ _This is to save Max money.  Shit's expensive, yo._
 _Please note that DALL-E and GPT 3.5 commands cost Max money! Be nice.
 **I keep track of usage, and will send you an invoice if you misbehave**_ :smiling_imp:
 """
+BOT_ROLE = '1086130719849463822'
+
+logging.basicConfig(level=logging.INFO)
 
 
 class ChatClient(discord.Client):
+    message: list[str] = []
+
     async def on_ready(self):
         print(f"{self.user} has connected to Discord")
 
@@ -39,10 +46,13 @@ class ChatClient(discord.Client):
         # Ignore own messages
         if message.author == self.user:
             return
-        print(f"MESSAGE: {message.content}")
+        logging.info(f"MESSAGE: {message.content}\nAUTHOR: {message.author}\nBOT: {self.user}")
+        # Matches both pinging the bot and the role, just in case
+        ping_regex = re.compile(f'^<@&?(?:{self.user.id}|{BOT_ROLE})> (.*)')
+        result = ping_regex.findall(message.content)
         # Bot was pinged
-        if message.content.startswith(f"<@{self.user.id}> "):
-            prompt = message.content.lstrip(f"<@{self.user.id}> ")
+        if result:
+            prompt = result[0]
             if "help" == prompt.lower():
                 resp = HELP_MSG
             elif "image of " == prompt[0:9]:
@@ -54,7 +64,7 @@ class ChatClient(discord.Client):
                 resp = f":link: {link}"
             else:
                 resp = gpt_parse(prompt)
-            await message.channel.send(resp)
+            await message.reply(resp)
             return
 
 
@@ -62,7 +72,7 @@ def main():
     token = os.getenv("DISCORD_TOKEN")
     openai.organization = os.getenv("GPT_ORG")
     openai.api_key = os.getenv("GPT_TOKEN")
-    if not token or not openai.api_key:
+    if not token or not openai.api_key or not openai.organization:
         print("ERROR:  MISSING ONE OF ['DISCORD_TOKEN', 'GPT_TOKEN', 'GPT_ORG'] ENV VARIABLES")
         exit(1)
     client = ChatClient()

@@ -84,13 +84,21 @@ def gpt_image(prompt: str) -> None:
     except openai.error.InvalidRequestError as e:
         print(f"ERROR: {e}")
         return ERROR_MESSAGE
+    except openai.error.RateLimitError as e:
+        return f":warning: Rate limited!  Please be patient."
 
 def gpt_parse(message: str) -> None:
     message = message.strip()
-    r = openai.ChatCompletion.create(
-        model=GPT_MODEL,
-        messages=[{"role": "system", "content": GPT_PROMPT_PREFIX}, {"role": "user", "content": message}],
-        temperature=1
-    )
-    response = from_dict(data_class=GPTResponse, data=r)
-    return response
+    try:
+        r = openai.ChatCompletion.create(
+            model=GPT_MODEL,
+            messages=[{"role": "system", "content": GPT_PROMPT_PREFIX}, {"role": "user", "content": message}],
+            temperature=1
+        )
+        response = from_dict(data_class=GPTResponse, data=r)
+        return response
+    except openai.error.InvalidRequestError as e:
+        print(f"ERROR: {e}")
+        return ERROR_MESSAGE
+    except openai.error.RateLimitError as e:
+        return f":warning: Rate limited!  Please be patient."
