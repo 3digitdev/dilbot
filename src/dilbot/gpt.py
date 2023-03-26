@@ -5,15 +5,13 @@ from dataclasses import dataclass
 
 
 # A prefix for all GPT prompts to make sure it reduces token count
-# TODO:  Do we need this or does `max_tokens` work?
 GPT_PROMPT_PREFIX = "Your name is Dilbot; You are a terse, slightly sarcastic engineer who responds with definitive answers in 100 words or less to all queries"
 GPT_MODEL = "gpt-3.5-turbo"
 DALL_E_IMAGE_SIZE = "256x256"
 GPT_DENIAL_SUBSTRINGS = [
-    "can not comply",
     "not within my algorithm",
-    "as an AI language model",
-    "I am programmed to"
+    "AI language model",
+    "I am programmed to",
 ]
 ERROR_MESSAGE = ":warning: Can't do that sorry"
 
@@ -82,9 +80,10 @@ def gpt_image(prompt: str) -> None:
         )
         return f':link: {r["data"][0]["url"]}\n:dollar: Cost: $0.016'
     except openai.error.InvalidRequestError as e:
-        print(f"ERROR: {e}")
+        log.error(f"Invalid Request: {e}")
         return ERROR_MESSAGE
     except openai.error.RateLimitError as e:
+        log.error(f"Rate Limit: {e}")
         return f":warning: Rate limited!  Please be patient."
 
 def gpt_parse(message: str) -> None:
@@ -98,7 +97,8 @@ def gpt_parse(message: str) -> None:
         response = from_dict(data_class=GPTResponse, data=r)
         return response
     except openai.error.InvalidRequestError as e:
-        print(f"ERROR: {e}")
+        log.error(f"Invalid Request: {e}")
         return ERROR_MESSAGE
     except openai.error.RateLimitError as e:
+        log.error(f"Rate Limit: {e}")
         return f":warning: Rate limited!  Please be patient."
